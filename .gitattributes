@@ -1,0 +1,5 @@
+# Normalize all text files to LF in the repository; checkout behavior is left
+# to each platform's git config. Keeps diffs stable across contributors.
+* text=auto eol=lf
+*.png binary
+*.ico binary

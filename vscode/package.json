@@ -1,0 +1,60 @@
+{
+  "name": "slophound-vscode",
+  "displayName": "SlopHound — AI slop scanner",
+  "description": "Sniff out AI slop in your repo: fake tests, placeholder code, slop comments, copy-paste blocks, unresolvable imports, hallucinated APIs.",
+  "version": "0.3.0",
+  "license": "MIT",
+  "publisher": "your-publisher-id",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Linters"
+  ],
+  "keywords": [
+    "ai",
+    "slop",
+    "lint",
+    "code-quality"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "slophound.scanWorkspace",
+        "title": "SlopHound: Scan Workspace",
+        "category": "SlopHound"
+      }
+    ],
+    "configuration": {
+      "title": "SlopHound",
+      "properties": {
+        "slophound.severity": {
+          "type": "string",
+          "default": "info",
+          "enum": [
+            "info",
+            "minor",
+            "major",
+            "critical"
+          ],
+          "enumDescriptions": [
+            "Show everything, including advisory findings",
+            "Hide advisory (info) findings",
+            "Show only minor and above",
+            "Show only critical findings"
+          ],
+          "description": "Minimum severity shown in the Problems panel."
+        },
+        "slophound.baseline": {
+          "type": "string",
+          "default": "",
+          "description": "Baseline file relative to the workspace root (created via: slophound . --update-baseline slophound-baseline.json). Findings in the baseline are hidden so you only see new slop."
+        }
+      }
+    }
+  }
+}

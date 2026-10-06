@@ -1,0 +1,192 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { main } from '../src/cli.js';
+import { scanPath } from '../src/api.js';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const SLOPPY = path.join(ROOT, 'test', 'fixtures', 'sloppy-project');
+const CLEAN = path.join(ROOT, 'test', 'fixtures', 'clean-project');
+
+// Runs the CLI in-process and captures console output.
+function run(args) {
+  const logs = [];
+  const origLog = console.log;
+  const origErr = console.error;
+  console.log = (...a) => logs.push(a.join(' '));
+  console.error = (...a) => logs.push(a.join(' '));
+  let code;
+  try {
+    code = main([...args, '--no-color']);
+  } finally {
+    console.log = origLog;
+    console.error = origErr;
+  }
+  return { status: code, stdout: logs.join('\n') };
+}
+
+function runJson(args) {
+  const r = run([...args, '--json']);
+  return JSON.parse(r.stdout);
+}
+
+test('sloppy project: every core rule fires and CI gate fails', () => {
+  const r = run([SLOPPY, '--json']);
+  assert.equal(r.status, 1, `expected exit 1, output: ${r.stdout}`);
+  const res = JSON.parse(r.stdout);
+  const ids = new Set(res.findings.map((f) => f.rule));
+  for (const id of ['no-assert-tests', 'placeholder-code', 'slop-comments', 'copy-paste', 'broken-imports', 'todo-sprawl', 'hallucinated-api']) {
+    assert.ok(ids.has(id), `expected rule ${id} to fire`);
+  }
+  assert.ok(res.score < 90, `expected a low score, got ${res.score}`);
+  assert.ok(res.files >= 10, 'expected at least 10 scanned files');
+});
+
+test('hallucinated-api: flags fake members on Math/JSON/os, not real ones', () => {
+  const res = runJson([SLOPPY]);
+  const hits = res.findings.filter((f) => f.rule === 'hallucinated-api');
+  const messages = hits.map((f) => f.message).join('\n');
+  assert.ok(messages.includes('JSON.isValid'), `expected JSON.isValid flagged: ${messages}`);
+  assert.ok(messages.includes('Math.mean'), `expected Math.mean flagged: ${messages}`);
+  assert.ok(messages.includes('os.listdirs'), `expected os.listdirs flagged: ${messages}`);
+  for (const real of ['Math.max', 'console.log', 'os.getcwd']) {
+    assert.ok(!messages.includes(real), `${real} must not be flagged`);
+  }
+});
+
+test('multi-language: Go/Java/Rust/C#/Kotlin test files are checked', () => {
+  const res = runJson([SLOPPY]);
+  for (const file of ['service.go', 'Service.java', 'lib.rs', 'Runner.cs', 'util.kt']) {
+    const hits = res.findings.filter((f) => f.rule === 'no-assert-tests' && f.file === file);
+    assert.ok(hits.length >= 1, `expected no-assert-tests finding in ${file}`);
+  }
+  const goStubs = res.findings.filter((f) => f.file === 'service.go' && f.rule === 'placeholder-code');
+  assert.ok(goStubs.length >= 1, 'expected a Go panic("not implemented") stub finding');
+  const rustStubs = res.findings.filter((f) => f.file === 'lib.rs' && f.rule === 'placeholder-code');
+  assert.ok(rustStubs.length >= 1, 'expected a Rust todo!() stub finding');
+  const ktStubs = res.findings.filter((f) => f.file === 'util.kt' && f.rule === 'placeholder-code');
+  assert.ok(ktStubs.length >= 1, 'expected a Kotlin TODO() stub finding');
+});
+
+test('baseline: --update-baseline then --baseline suppresses everything recorded', () => {
+  const baselineFile = path.join(ROOT, 'test', 'tmp-baseline.json');
+  const write = run([SLOPPY, '--update-baseline', baselineFile]);
+  assert.equal(write.status, 0);
+  assert.ok(fs.existsSync(baselineFile));
+
+  const without = runJson([SLOPPY]);
+  const withBaseline = runJson([SLOPPY, '--baseline', baselineFile]);
+  assert.equal(run([SLOPPY, '--baseline', baselineFile]).status, 0, 'baseline run must exit 0');
+  assert.ok(withBaseline.baselineCount > 0, 'expected suppressed findings');
+  assert.equal(withBaseline.findings.length, without.findings.length, 'all findings still reported');
+  assert.ok(withBaseline.score > without.score, 'score must ignore baseline findings');
+  fs.unlinkSync(baselineFile);
+});
+
+test('sarif: --sarif writes valid SARIF 2.1.0 with matching results', () => {
+  const out = path.join(ROOT, 'test', 'tmp-report.sarif.json');
+  const res = runJson([SLOPPY, '--sarif', out]);
+  assert.ok(fs.existsSync(out));
+  const sarif = JSON.parse(fs.readFileSync(out, 'utf8'));
+  assert.equal(sarif.version, '2.1.0');
+  assert.equal(sarif.runs.length, 1);
+  assert.equal(sarif.runs[0].results.length, res.findings.length);
+  assert.ok(sarif.runs[0].results.every((r) => r.ruleId && r.locations?.[0]?.physicalLocation?.region?.startLine));
+  assert.ok(sarif.runs[0].tool.driver.rules.length >= 1);
+  fs.unlinkSync(out);
+});
+
+test('--list-rules prints the rule catalog', () => {
+  const r = run(['--list-rules']);
+  assert.equal(r.status, 0);
+  for (const id of ['no-assert-tests', 'todo-sprawl', 'broken-imports']) {
+    assert.ok(r.stdout.includes(id), `expected ${id} in catalog`);
+  }
+});
+
+test('clean project: passes with no minor+ findings and a high score', () => {
+  const r = run([CLEAN, '--json']);
+  assert.equal(r.status, 0, `expected exit 0, findings: ${r.stdout}`);
+  const res = JSON.parse(r.stdout);
+  const serious = res.findings.filter((f) => f.severity !== 'info');
+  assert.equal(serious.length, 0, `unexpected serious findings: ${JSON.stringify(serious)}`);
+  assert.ok(res.score >= 90, `expected score >= 90, got ${res.score}`);
+});
+
+test('--fail-on none never fails the build', () => {
+  assert.equal(run([SLOPPY, '--fail-on', 'none']).status, 0);
+});
+
+test('--rules filter runs only the selected rule', () => {
+  const res = runJson([SLOPPY, '--rules', 'copy-paste']);
+  assert.ok(res.findings.length >= 1);
+  for (const f of res.findings) assert.equal(f.rule, 'copy-paste');
+});
+
+test('--ignore excludes matched files', () => {
+  const all = runJson([SLOPPY]);
+  const fewer = runJson([SLOPPY, '--ignore', '*.py']);
+  assert.ok(all.files > fewer.files, `expected fewer files, ${all.files} -> ${fewer.files}`);
+  assert.equal(fewer.files, 8);
+});
+
+test('programmatic API: scanPath matches CLI output', () => {
+  const { result } = scanPath(SLOPPY, { target: SLOPPY });
+  const viaCli = runJson([SLOPPY]);
+  assert.equal(result.findings.length, viaCli.findings.length);
+  assert.equal(result.score, viaCli.score);
+  assert.equal(result.files, viaCli.files);
+});
+
+test('--md writes a Markdown report', () => {
+  const out = path.join(ROOT, 'test', 'tmp-report.md');
+  const r = run([CLEAN, '--md', out]);
+  assert.equal(r.status, 0);
+  assert.ok(fs.existsSync(out));
+  const content = fs.readFileSync(out, 'utf8');
+  assert.ok(content.includes('SlopHound report'));
+  assert.ok(content.startsWith('#'));
+  fs.unlinkSync(out);
+});
+
+test('--fix-dry previews fixes without touching files', () => {
+  const target = path.join(SLOPPY, 'app.js');
+  const before = fs.readFileSync(target, 'utf8');
+  const r = run([SLOPPY, '--fix-dry']);
+  assert.equal(r.status, 0);
+  assert.ok(r.stdout.includes('would remove'), `unexpected output: ${r.stdout}`);
+  assert.equal(fs.readFileSync(target, 'utf8'), before, 'fix-dry must not modify files');
+});
+
+test('--fix removes slop comment lines and keeps code intact', () => {
+  const copy = path.join(ROOT, 'test', 'tmp-fix-project');
+  fs.cpSync(SLOPPY, copy, { recursive: true });
+  try {
+    const r = run([copy, '--fix']);
+    assert.equal(r.status, 0);
+    const fixed = fs.readFileSync(path.join(copy, 'app.js'), 'utf8');
+    assert.ok(!fixed.includes('Note that'), 'slop comment should be removed');
+    assert.ok(!fixed.includes('🚀'), 'emoji comment should be removed');
+    assert.ok(fixed.includes('export function main'), 'code must survive the fix');
+    assert.ok(fixed.includes('import { magic }'), 'comment-only lines only; code imports stay');
+  } finally {
+    fs.rmSync(copy, { recursive: true, force: true });
+  }
+});
+
+test('self-scan: slophound keeps its own source clean', () => {
+  const r = run([path.join(ROOT, 'src'), '--json']);
+  assert.equal(r.status, 0, `self-scan found serious issues: ${r.stdout}`);
+  const res = JSON.parse(r.stdout);
+  const serious = res.findings.filter((f) => f.severity !== 'info');
+  assert.equal(serious.length, 0, `unexpected findings in src: ${JSON.stringify(serious)}`);
+  assert.ok(res.score >= 90, `expected self-scan score >= 90, got ${res.score}`);
+});
+
+test('--version and --help work', () => {
+  assert.match(run(['--version']).stdout, /slophound v/);
+  assert.ok(run(['--help']).stdout.includes('Usage'));
+});

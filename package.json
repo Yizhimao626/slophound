@@ -1,0 +1,43 @@
+{
+  "name": "slophound",
+  "version": "0.3.0",
+  "description": "Sniff out AI slop in your repo: fake tests, placeholder code, slop comments, copy-paste blocks, hallucinated imports. Zero dependencies, fully offline.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "slophound": "bin/slophound.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "test": "node --test test/slophound.test.js",
+    "selfscan": "node bin/slophound.js src"
+  },
+  "keywords": [
+    "ai",
+    "slop",
+    "lint",
+    "code-quality",
+    "static-analysis",
+    "cli",
+    "developer-tools",
+    "llm",
+    "code-review",
+    "vibe-coding"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/slophound.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/slophound/issues"
+  }
+}

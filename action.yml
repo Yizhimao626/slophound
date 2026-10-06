@@ -1,0 +1,19 @@
+name: 'SlopHound'
+description: 'Sniff out AI slop in your repo: fake tests, placeholder code, slop comments, copy-paste blocks, unresolvable imports.'
+branding:
+  icon: 'search'
+  color: 'orange'
+inputs:
+  path:
+    description: 'Path to scan (relative to the workspace)'
+    required: false
+    default: '.'
+  fail-on:
+    description: 'Severity that fails the build: info | minor | major | critical | none'
+    required: false
+    default: 'major'
+runs:
+  using: 'composite'
+  steps:
+    - shell: bash
+      run: node "${{ github.action_path }}/bin/slophound.js" "${{ inputs.path }}" --fail-on "${{ inputs.fail-on }}" --no-color

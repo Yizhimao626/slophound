@@ -1,0 +1,7 @@
+.vscode/**
+src/**
+**/.git
+**/node_modules
+**/test
+**/docs
+.vscode-test/**
