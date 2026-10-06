@@ -2,7 +2,7 @@
 
 **Sniff out AI slop in your repo — then clean it up.**
 
-[![CI](https://github.com/your-username/slophound/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/slophound/actions/workflows/ci.yml)
+[![CI](https://github.com/Yizhimao626/slophound/actions/workflows/ci.yml/badge.svg)](https://github.com/Yizhimao626/slophound/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node](https://img.shields.io/node/v/slophound)](package.json)
 [中文文档](README.zh-CN.md)
@@ -18,30 +18,30 @@ your repo from 0–100, and — unlike every other detector — **removes what i
 can safely remove**.
 
 ```
-  slophound v0.1.0 — AI slop scanner
+  slophound v0.4.0 — AI slop scanner
 
   Score   0/100  (F)
-  Scanned 5 files · 71 lines · 6 rules · 9 findings
+  Scanned 10 files · 186 lines · 8 rules · 25 findings
 
   MAJOR    copy-paste · 1 finding
     utils.js:10
       identical 8-line block appears 3 times (utils.js:10, utils.js:21, utils.js:32)
       | if (typeof cents !== 'number') {
 
-  MAJOR    no-assert-tests · 3 findings
+  MAJOR    no-assert-tests · 8 findings
     app.test.js:4
       test case contains no assertions — it cannot fail
       | test('calculates the total', () => {
 
   MAJOR    placeholder-code · 2 findings
-    script.py:13
+    script.py:16
       stub body ("...") — this function does nothing
       | ...
 
   MINOR    broken-imports · 1 finding
     app.js:5
-      package "some-package-that-is-not-installed" is not installed in any node_modules up to the project root
-      | import lodash from 'some-package-that-is-not-installed';
+      relative import does not resolve: "./does-not-exist.js"
+      | import { magic } from './does-not-exist.js';
 
   INFO     slop-comments · 2 findings
     app.js:1
@@ -114,10 +114,11 @@ default), so the CLI drops straight into any CI:
 Or use the bundled composite action from a checkout of this repo:
 
 ```yaml
-- uses: your-username/slophound@main
+- uses: Yizhimao626/slophound@main
   with:
     path: src
     fail-on: minor
+  # The runner needs Node.js ≥ 18 (GitHub-hosted runners have it preinstalled).
 ```
 
 ### Reports
@@ -140,6 +141,8 @@ npx slophound . --prune-baseline slophound-baseline.json    # drop fingerprints 
 
 Commit the baseline file. Findings in the baseline still show up in reports
 (marked as known), but they don't count toward the score or the exit code.
+Fingerprints include each rule's message wording — if a future upgrade changes
+messages, re-run `--update-baseline` once (release notes will call it out).
 
 ### Configuration
 
@@ -152,9 +155,12 @@ Commit the baseline file. Findings in the baseline still show up in reports
     "broken-imports": { "enabled": true, "ignore": ["@mycompany/internal-*"] }
   },
   "ignore": ["**/generated/**"],
+  "paths": { "@": "./src" },
   "failOn": "major"
 }
 ```
+
+`paths` maps import aliases so `@/foo` resolves to `./src/foo`.
 
 `.sloprc.json` works too. Gitignore-style patterns are honored from both
 `.gitignore` and `--ignore` / config `ignore`.
@@ -200,8 +206,7 @@ positive and a negative fixture.
 ## Stay updated
 
 Watch releases on GitHub (**Watch → Custom → Releases**) to get notified about
-new rules and languages — or subscribe to release notes at
-`<your-newsletter-link>`.
+new rules and languages — every release ships with a changelog.
 
 ## License
 

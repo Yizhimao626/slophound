@@ -44,14 +44,18 @@ export function runFix(files, opts) {
   }
 
   for (const { file, lines } of plan) {
-    const { content, removed } = applyDeletions(fs.readFileSync(file.path, 'utf8').replace(/\r\n/g, '\n'), lines);
+    const raw = fs.readFileSync(file.path, 'utf8');
+    // Preserve the file's own line endings: --fix must never rewrite EOLs
+    // across the whole file (CRLF repos would otherwise diff every line).
+    const eol = raw.includes('\r\n') ? '\r\n' : '\n';
+    const { content, removed } = applyDeletions(raw.replace(/\r\n/g, '\n'), lines);
     totalRemoved += removed;
     filesTouched++;
     if (dry) {
       console.log(`\n${file.rel} — would remove ${removed} comment line(s):`);
       for (const n of lines) console.log(`  - ${n}: ${(file.lines[n - 1] ?? '').trim()}`);
     } else {
-      fs.writeFileSync(file.path, content);
+      fs.writeFileSync(file.path, eol === '\r\n' ? content.replace(/\n/g, '\r\n') : content);
       console.log(`fixed ${file.rel} — removed ${removed} comment line(s)`);
     }
   }

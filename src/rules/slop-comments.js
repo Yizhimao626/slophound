@@ -11,7 +11,7 @@ const PHRASES = [
   [/\b(?:importantly|interestingly|notably)\b,/i, '"importantly/notably,"'],
   [/\blet's\b/i, '"let\'s"'],
   [/\bthis (?:function|method|class|line|block|section|component) (?:will|does|is used|handles|creates|returns|sets)/i, '"this function does ..."'],
-  [/\bensure(?: that| ing)?\b/i, '"ensure ..."'],
+  [/\bensure (?:that|to)\b/i, '"ensure that/to"'],
   [/\bmake sure (?:to|that)\b/i, '"make sure to"'],
   [/\bdon'?t forget\b/i, '"don\'t forget"'],
   [/\bstep \d+[:.]/i, '"Step N:"'],

@@ -41,6 +41,12 @@ test('sloppy project: every core rule fires and CI gate fails', () => {
   for (const id of ['no-assert-tests', 'placeholder-code', 'slop-comments', 'copy-paste', 'broken-imports', 'todo-sprawl', 'hallucinated-api']) {
     assert.ok(ids.has(id), `expected rule ${id} to fire`);
   }
+  // Regression guard: relative imports must actually be resolved (a regex in
+  // SKIP_SPEC_RE once silently disabled this entire branch, see v0.4.1).
+  assert.ok(
+    res.findings.some((f) => f.rule === 'broken-imports' && f.message.includes('does-not-exist.js')),
+    'relative import ./does-not-exist.js must be flagged'
+  );
   assert.ok(res.score < 90, `expected a low score, got ${res.score}`);
   assert.ok(res.files >= 10, 'expected at least 10 scanned files');
 });
@@ -212,6 +218,79 @@ test('self-scan: slophound keeps its own source clean', () => {
   const serious = res.findings.filter((f) => f.severity !== 'info');
   assert.equal(serious.length, 0, `unexpected findings in src: ${JSON.stringify(serious)}`);
   assert.ok(res.score >= 90, `expected self-scan score >= 90, got ${res.score}`);
+});
+
+test('broken-imports: declared deps are not flagged; ?raw imports resolve', () => {
+  const res = runJson([SLOPPY]);
+  const messages = res.findings
+    .filter((f) => f.rule === 'broken-imports')
+    .map((f) => f.message)
+    .join('\n');
+  assert.ok(!messages.includes('some-package-that-is-not-installed'), 'package declared in package.json must not be flagged');
+  assert.ok(!messages.includes('?raw'), 'query-string import must resolve against the base path');
+  assert.ok(messages.includes('does-not-exist.js'), 'missing relative import must still be flagged');
+});
+
+test('--fail-on with an invalid value fails loudly instead of disabling the gate', () => {
+  const r = run([SLOPPY, '--fail-on', 'Major']);
+  assert.equal(r.status, 2);
+  assert.ok(/invalid failOn/i.test(r.stdout), `unexpected output: ${r.stdout}`);
+});
+
+test('--rules with an unknown rule id fails loudly', () => {
+  const r = run([SLOPPY, '--rules', 'no-such-rule']);
+  assert.equal(r.status, 2);
+  assert.ok(/unknown rule/i.test(r.stdout), `unexpected output: ${r.stdout}`);
+});
+
+test('missing option values fail with a clear error', () => {
+  // --ignore must be last so the helper doesn't append a value for it.
+  const logs = [];
+  const origLog = console.log;
+  const origErr = console.error;
+  console.log = (...a) => logs.push(a.join(' '));
+  console.error = (...a) => logs.push(a.join(' '));
+  let code;
+  try {
+    code = main([SLOPPY, '--ignore']);
+  } finally {
+    console.log = origLog;
+    console.error = origErr;
+  }
+  assert.equal(code, 2);
+  assert.ok(/missing value/i.test(logs.join('\n')), `unexpected output: ${logs.join('\n')}`);
+});
+
+test('--fix preserves CRLF line endings', () => {
+  const copy = path.join(ROOT, 'test', 'tmp-crlf-project');
+  fs.cpSync(SLOPPY, copy, { recursive: true });
+  try {
+    const target = path.join(copy, 'app.js');
+    fs.writeFileSync(target, fs.readFileSync(target, 'utf8').replace(/\n/g, '\r\n'));
+    const r = run([copy, '--fix']);
+    assert.equal(r.status, 0);
+    const after = fs.readFileSync(target, 'utf8');
+    assert.ok(after.includes('\r\n'), 'CRLF line endings must survive --fix');
+    assert.ok(!after.includes('Note that'), 'slop comment should be removed');
+    assert.ok(after.includes('export function main'), 'code must survive the fix');
+  } finally {
+    fs.rmSync(copy, { recursive: true, force: true });
+  }
+});
+
+test('--md marks baseline-suppressed findings', () => {
+  const baselineFile = path.join(ROOT, 'test', 'tmp-md-baseline.json');
+  const mdFile = path.join(ROOT, 'test', 'tmp-md-report.md');
+  run([SLOPPY, '--update-baseline', baselineFile]);
+  try {
+    const r = run([SLOPPY, '--baseline', baselineFile, '--md', mdFile]);
+    assert.equal(r.status, 0);
+    const md = fs.readFileSync(mdFile, 'utf8');
+    assert.ok(md.includes('*(baseline)*'), `expected baseline markers in report: ${md.slice(0, 600)}`);
+  } finally {
+    fs.rmSync(baselineFile, { force: true });
+    fs.rmSync(mdFile, { force: true });
+  }
 });
 
 test('--version and --help work', () => {

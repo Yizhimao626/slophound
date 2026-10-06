@@ -36,6 +36,7 @@ const HELP = `
     --ignore <glob>     ignore files/dirs (repeatable, gitignore-style)
     --max-files <n>     cap scanned files (default: 5000)
     --no-color          disable colored output
+    --color             force colored output (also on non-TTY)
     --init              write a starter slophound.config.json
     -v, --version       print version
     -h, --help          print this help
@@ -71,6 +72,13 @@ const HELP = `
 `;
 
 function parseArgs(argv) {
+  // Every value-taking flag goes through need() so a missing value fails
+  // with a clear message instead of undefined flowing into the scan.
+  const need = (i, flag) => {
+    const v = argv[i + 1];
+    if (v === undefined || v === '') throw new Error(`missing value for ${flag}`);
+    return v;
+  };
   const opts = {
     target: '.',
     json: false,
@@ -107,14 +115,26 @@ function parseArgs(argv) {
       }
       case '--fix': opts.fix = true; break;
       case '--fix-dry': opts.fixDry = true; break;
-      case '--fail-on': opts.failOn = argv[++i]; break;
-      case '--baseline': opts.baseline = argv[++i]; break;
-      case '--prune-baseline': opts.baseline = argv[++i]; opts.pruneBaseline = argv[i]; break;
-      case '--update-baseline': opts.updateBaseline = argv[++i]; break;
-      case '--rules': opts.rules = (argv[++i] ?? '').split(',').map((s) => s.trim()).filter(Boolean); break;
+      case '--fail-on': opts.failOn = need(i, '--fail-on'); i++; break;
+      case '--baseline': opts.baseline = need(i, '--baseline'); i++; break;
+      case '--prune-baseline': {
+        const v = need(i, '--prune-baseline');
+        opts.baseline = v;
+        opts.pruneBaseline = v;
+        i++;
+        break;
+      }
+      case '--update-baseline': opts.updateBaseline = need(i, '--update-baseline'); i++; break;
+      case '--rules': opts.rules = need(i, '--rules').split(',').map((s) => s.trim()).filter(Boolean); i++; break;
       case '--list-rules': opts.listRules = true; break;
-      case '--ignore': opts.ignore.push(argv[++i]); break;
-      case '--max-files': opts.maxFiles = Number.parseInt(argv[++i], 10); break;
+      case '--ignore': opts.ignore.push(need(i, '--ignore')); i++; break;
+      case '--max-files': {
+        const v = need(i, '--max-files');
+        opts.maxFiles = Number.parseInt(v, 10);
+        if (!Number.isFinite(opts.maxFiles) || opts.maxFiles <= 0) throw new Error(`invalid value for --max-files: ${v}`);
+        i++;
+        break;
+      }
       case '--no-color': opts.color = false; break;
       case '--color': opts.color = true; break;
       case '--init': opts.init = true; break;
@@ -129,6 +149,12 @@ function parseArgs(argv) {
 }
 
 function scan(root, opts) {
+  if (opts.rules) {
+    const known = new Set(RULES.map((r) => r.id));
+    for (const id of opts.rules) {
+      if (!known.has(id)) throw new Error(`unknown rule "${id}" (see --list-rules)`);
+    }
+  }
   return scanPath(root, {
     target: opts.target,
     rules: opts.rules,
@@ -185,6 +211,10 @@ export function main(argv) {
 
   try {
     const { config, result, loaded, active } = scan(root, opts);
+
+    if (opts.updateBaseline && (opts.fix || opts.fixDry)) {
+      console.log(c.yellow('slophound: note — --fix is ignored when --update-baseline is set.'));
+    }
 
     if (opts.pruneBaseline) {
       const before = loadBaseline(opts.pruneBaseline).size;

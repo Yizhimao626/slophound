@@ -4,7 +4,7 @@
   "description": "Sniff out AI slop in your repo: fake tests, placeholder code, slop comments, copy-paste blocks, unresolvable imports, hallucinated APIs.",
   "version": "0.3.0",
   "license": "MIT",
-  "publisher": "your-publisher-id",
+  "publisher": "Yizhimao626",
   "engines": {
     "vscode": "^1.80.0"
   },

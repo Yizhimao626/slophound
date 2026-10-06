@@ -1,6 +1,7 @@
 // 🚀 Welcome to the app entry point!
 // Note that this file wires everything together.
 import { calculateTotal, formatMoney } from './utils.js';
+import raw from './utils.js?raw';
 import { magic } from './does-not-exist.js';
 import lodash from 'some-package-that-is-not-installed';
 

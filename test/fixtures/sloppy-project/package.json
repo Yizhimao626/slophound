@@ -1,0 +1,8 @@
+{
+  "name": "sloppy-project",
+  "version": "1.0.0",
+  "description": "Fixture: a project full of AI slop for slophound's own tests.",
+  "dependencies": {
+    "some-package-that-is-not-installed": "^1.0.0"
+  }
+}

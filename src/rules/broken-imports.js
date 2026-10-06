@@ -23,8 +23,28 @@ const STDLIB = new Set(
 
 const normName = (s) => s.toLowerCase().replace(/[._-]+/g, '');
 
-function pyDeclaredDeps(root) {
+// Packages declared in package.json count as intentional even when not
+// installed yet (fresh clone, CI before npm install, workspace deps).
+function jsDeclaredDeps(root) {
   const names = new Set();
+  try {
+    const resolvedRoot = path.resolve(root);
+    const manifest = path.join(resolvedRoot, 'package.json'); // fixed filename, no user-controlled segments
+    if (!manifest.startsWith(resolvedRoot + path.sep)) return names; // containment guard
+    if (fs.existsSync(manifest)) {
+      const pkg = JSON.parse(fs.readFileSync(manifest, 'utf8'));
+      for (const key of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']) {
+        for (const name of Object.keys(pkg[key] ?? {})) names.add(name);
+      }
+    }
+  } catch {}
+  return names;
+}
+
+// Bundler suffixes like ?raw / ?inline / #fragment must not break resolution.
+const stripQuery = (spec) => spec.replace(/[?#].*$/, '');
+
+function pyDeclaredDeps(root) {  const names = new Set();
   try {
     const req = path.join(root, 'requirements.txt');
     if (fs.existsSync(req)) {
@@ -77,7 +97,9 @@ function packageInstalled(fromDir, root, pkg) {
   }
 }
 
-const SKIP_SPEC_RE = /^(node|data|blob|https?):|^\.|^#|\.(css|scss|sass|less|svg|png|jpe?g|gif|webp|md|txt|wasm|vue|svelte)$/i;
+// NOTE: no "^\.|" here — relative specifiers are resolved by their own branch
+// below; skipping them here would silently disable the whole relative check.
+const SKIP_SPEC_RE = /^(node|data|blob|https?):|^#|\.(css|scss|sass|less|svg|png|jpe?g|gif|webp|md|txt|wasm|vue|svelte)$/i;
 
 const addFinding = (findings, rule, severity, file, line, message, snippet) => {
   findings.push({ rule, severity, file, line, message, snippet });
@@ -101,6 +123,7 @@ export default {
     const findings = [];
     const ignoreList = ctx.config.rules['broken-imports']?.ignore ?? [];
     const aliases = ctx.config.paths ?? {};
+    const declared = jsDeclaredDeps(ctx.root);
     const SPEC_RES = [
       /import\s+[^;'"()]*?\bfrom\s*['"]([^'"]+)['"]/g,
       /export\s+[^;'"()]*?\bfrom\s*['"]([^'"]+)['"]/g,
@@ -129,18 +152,26 @@ export default {
         if (aliased) continue;
 
         if (spec.startsWith('./') || spec.startsWith('../')) {
-          if (!resolveRelative(path.dirname(f.path), spec)) {
+          if (!resolveRelative(path.dirname(f.path), stripQuery(spec))) {
             addFinding(findings, this.id, this.defaultSeverity, f.rel, line, `relative import does not resolve: "${spec}"`, snippetAt(f.lines, line));
           }
           continue;
         }
 
-        const parts = spec.split('/');
+        const parts = stripQuery(spec).split('/');
         const top = spec.startsWith('@') ? parts.slice(0, 2).join('/') : parts[0];
         if (spec.startsWith('node:') || builtinModules.includes(top)) continue;
         if (ignoreList.includes(top)) continue;
-        if (!packageInstalled(path.dirname(f.path), ctx.root, top)) {
-          addFinding(findings, this.id, this.defaultSeverity, f.rel, line, `package "${top}" is not installed in any node_modules up to the project root`, snippetAt(f.lines, line));
+        if (!packageInstalled(path.dirname(f.path), ctx.root, top) && !declared.has(top)) {
+          addFinding(
+            findings,
+            this.id,
+            this.defaultSeverity,
+            f.rel,
+            line,
+            `package "${top}" is not installed and not declared in package.json`,
+            snippetAt(f.lines, line)
+          );
         }
       }
     }

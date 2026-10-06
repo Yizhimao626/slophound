@@ -48,6 +48,13 @@ export function scanPath(root, options = {}) {
   if (opts.maxFiles) config.maxFiles = opts.maxFiles;
   if (opts.ignore.length) config.ignore.push(...opts.ignore);
 
+  // A typo'd failOn (e.g. "Major") must fail loudly — a silently disabled
+  // CI gate is the worst possible failure mode for this tool.
+  const validFailOn = [...Object.keys(SEVERITY_ORDER), 'none'];
+  if (config.failOn && !validFailOn.includes(config.failOn)) {
+    throw new Error(`invalid failOn "${config.failOn}" (expected: ${validFailOn.join(' | ')})`);
+  }
+
   const { files, skipped, truncated } = walk(root, { extraIgnore: config.ignore, maxFiles: config.maxFiles });
   const loaded = files.map(loadFile).filter(Boolean);
 

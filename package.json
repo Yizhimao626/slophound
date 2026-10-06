@@ -19,7 +19,8 @@
   ],
   "scripts": {
     "test": "node --test test/slophound.test.js",
-    "selfscan": "node bin/slophound.js src"
+    "selfscan": "node bin/slophound.js src",
+    "prepublishOnly": "npm test && npm run selfscan"
   },
   "keywords": [
     "ai",
@@ -35,9 +36,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-username/slophound.git"
+    "url": "git+https://github.com/Yizhimao626/slophound.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/slophound/issues"
-  }
+    "url": "https://github.com/Yizhimao626/slophound/issues"
+  },
+  "homepage": "https://github.com/Yizhimao626/slophound#readme"
 }

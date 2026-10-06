@@ -2,7 +2,7 @@
 
 **嗅出你仓库里的 AI slop——然后清理掉。**
 
-[![CI](https://github.com/your-username/slophound/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/slophound/actions/workflows/ci.yml)
+[![CI](https://github.com/Yizhimao626/slophound/actions/workflows/ci.yml/badge.svg)](https://github.com/Yizhimao626/slophound/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node](https://img.shields.io/node/v/slophound)](package.json)
 [English](README.md)
@@ -82,7 +82,7 @@ npx slophound . --fix                # 真正清理（只删整行注释，绝�
 也可以直接使用本仓库自带的 composite action：
 
 ```yaml
-- uses: your-username/slophound@main
+- uses: Yizhimao626/slophound@main
   with:
     path: src
     fail-on: minor
@@ -105,7 +105,7 @@ npx slophound . --baseline slophound-baseline.json          # CI：只对新增 
 npx slophound . --prune-baseline slophound-baseline.json    # 已修复的问题自动移出基线
 ```
 
-把基线文件提交进仓库。基线里的发现仍会出现在报告中（标记为已知问题），但不计入评分、不影响退出码。
+把基线文件提交进仓库。基线里的发现仍会出现在报告中（标记为已知问题），但不计入评分、不影响退出码。指纹包含规则的消息措辞——若未来升级改动了消息，重跑一次 `--update-baseline` 即可（更新日志会注明）。
 
 ### 配置
 

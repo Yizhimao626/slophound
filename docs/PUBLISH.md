@@ -2,19 +2,12 @@
 
 从当前状态到「GitHub + npm 上线」的完整步骤。按顺序做，每一步都很快。
 
-## 1. 替换占位符
+## 1. 占位符（已替换 ✅）
 
-以下文件里的 `your-username` / 作者信息需要替换成你的真实信息：
+仓库链接已指向 `github.com/Yizhimao626/slophound`（package.json、README 双语徽章、Action 示例、sarif.js、vscode publisher）。仅剩两处需要你手动确认：
 
-- [ ] `package.json` → `repository.url`、`bugs.url`
-- [ ] `README.md` / `README.zh-CN.md` → CI badge 链接、`uses: your-username/slophound@main`、"Stay updated" 一节的订阅链接
-- [ ] `LICENSE` → 把 `The SlopHound Authors` 改成你的名字或 GitHub handle（保留 2026 或改为你的发布年份）
-- [ ] `action.yml` 无需改动
-
-```bash
-# 在项目根目录全局替换（替换成你的 GitHub 用户名后执行）
-grep -rl "your-username" . --exclude-dir=node_modules | xargs sed -i 's/your-username/YOUR_GITHUB_NAME/g'
-```
+- [ ] `README.md` "Stay updated" 一节如需邮件订阅，自行接入 Buttondown/listmonk 后加链接（当前默认只引导 Watch Releases）
+- [ ] `LICENSE` 版权人 `The SlopHound Authors` 可改成你的名字（可选）
 
 ## 2. 发布到 npm
 

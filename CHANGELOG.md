@@ -7,65 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.0] - 2026-10-06
 
-### Added
-
-- `hallucinated-api` now also checks **literal receivers**: string, number, and
-  array literals in JavaScript; string, list/set, and dict literals in Python
-  (e.g. `"abc".subString(0)`, `[1,2].flattened()`, `"slop".strips()`). Real
-  members are whitelisted; element access like `arr[0].foo()` is never flagged.
-- **`--prune-baseline <file>`**: scan with a baseline and rewrite it without
-  fingerprints that no longer occur — fixed issues leave the baseline instead
-  of accumulating forever.
-
-## [0.3.0] - 2026-10-06
+First public release.
 
 ### Added
 
-- **C# and Kotlin support** — 7 languages total. `no-assert-tests` understands
-  `[TestMethod]` / `[Fact]` / `[Theory]` (MSTest/xUnit/NUnit) and `@Test` (JUnit for
-  Kotlin); `placeholder-code` recognizes `NotImplementedException` and Kotlin's
-  `TODO()`. Comment-based rules cover both languages.
-- New rule `hallucinated-api` (beta): flags calls to members that do not exist on
-  well-known globals — `Math`/`JSON`/`Object`/`console`/... in JavaScript,
-  `os`/`json`/`math` in Python (e.g. `JSON.isValid()`, `Math.mean()`, `os.listdirs()`).
-  Real members are whitelisted; property access and non-globals are ignored.
-- **VS Code extension MVP** (`vscode/`): Problems-panel diagnostics from the same
-  engine, workspace scan command, on-save rescans, severity filter and baseline
-  support. Runs from a source checkout; marketplace packaging documented.
-- **Programmatic API** (`src/api.js`): `scanPath(root, options)` — the single
-  scan implementation now shared by the CLI, the extension, and library consumers.
+- **8 rules across 7 languages** (JavaScript/TypeScript, Python, Go, Java, Rust, C#, Kotlin):
+  - `no-assert-tests` — test cases that never assert anything (node:test/jest/vitest, pytest, go test, `#[test]`, `[TestMethod]`/`[Fact]`/`[Theory]`, JUnit `@Test`).
+  - `copy-paste` — identical 8-line blocks repeated across the repo.
+  - `placeholder-code` — stub bodies, "goes here" markers, `todo!()` / `panic("not implemented")` / `NotImplementedException` / `TODO()` stubs.
+  - `hallucinated-api` (beta) — calls to members that do not exist on well-known globals (`Math`/`JSON`/`Object`/`console`/... in JS; `os`/`json`/`math` in Python) or on string/number/array/dict literals.
+  - `broken-imports` (beta, JS/TS + Python) — relative imports that do not resolve; packages neither installed nor declared.
+  - `todo-sprawl` — files accumulating 5+ TODO/FIXME/HACK markers.
+  - `slop-comments` — LLM filler phrases and emoji headers in comments (English + Chinese).
+  - `comment-ratio` — files that are more than half comments.
+- **Fix mode**: `--fix-dry` previews, `--fix` removes slop comment lines only — never code, never foreign line endings.
+- **Baseline workflow** for existing repos: `--update-baseline` (snapshot), `--baseline` (gate only new slop), `--prune-baseline` (drop fingerprints that no longer occur).
+- **Output formats**: colored terminal report, `--json`, `--md` (Markdown for PRs), `--sarif` (SARIF 2.1.0 for code scanning).
+- **CI gate**: `--fail-on <severity>` exit codes, reusable composite Action, GitHub Actions workflow (Ubuntu/Windows/macOS, Node 18/20/22).
+- **Programmatic API** (`src/api.js`) — one scan implementation shared by the CLI, the VS Code extension (MVP, `vscode/`), and library consumers.
+- `--list-rules`, `--init` config bootstrap, gitignore-style ignores, `paths` alias resolution, zero dependencies, fully offline.
 
-## [0.2.0] - 2026-10-06
+### Fixed
 
-### Added
-
-- **Go, Java, and Rust support.** `no-assert-tests` now understands `func TestX(t *testing.T)`,
-  `@Test` JUnit methods, and `#[test]` functions; `placeholder-code` recognizes
-  `todo!()` / `unimplemented!()`, `panic("not implemented")`, and
-  `UnsupportedOperationException`. Comment-based rules work in all five languages.
-- **Baseline workflow** for existing repos: `--update-baseline <file>` records current
-  findings; `--baseline <file>` suppresses them so CI gates only *new* slop.
-  Suppressed findings still appear in reports, flagged as baseline.
-- **SARIF 2.1.0 output** (`--sarif [file]`) for GitHub code scanning and other
-  SARIF-capable platforms.
-- New rule `todo-sprawl`: flags files with 5+ TODO/FIXME/HACK markers.
-- `--list-rules`: prints the rule catalog.
-
-## [0.1.0] - 2026-10-06
-
-### Added
-
-- Core scanner for JavaScript / TypeScript / Python projects (zero dependencies, fully offline).
-- Rules:
-  - `no-assert-tests` — test cases that never assert anything.
-  - `placeholder-code` — stub bodies and "for brevity / goes here" placeholders.
-  - `slop-comments` — AI-flavored comment patterns (filler phrases, emoji headers) in English and Chinese.
-  - `comment-ratio` — files dominated by comments rather than code.
-  - `copy-paste` — identical multi-line blocks repeated across the repo.
-  - `broken-imports` (experimental) — relative imports that do not resolve, and packages that are neither installed nor declared.
-- 0–100 slop score with letter grade, transparent formula.
-- Terminal, JSON, and Markdown report output.
-- `--fix` / `--fix-dry`: safely remove slop comment lines (dry-run diff by default).
-- CI-friendly exit codes and `--fail-on` severity gate.
-- Config file support (`slophound.config.json` / `.sloprc.json`).
-- GitHub Actions workflow and a reusable composite Action.
+- `--fix` preserves CRLF line endings instead of rewriting whole files on Windows.
+- Invalid `--fail-on` / `--rules` values now fail loudly (exit 2) instead of silently disabling the CI gate.
+- Missing option values (e.g. `--ignore` as the last argument) fail with a clear error instead of crashing.
+- **Relative-import detection was silently dead** since the first build: a leftover `^\.|` alternative in `SKIP_SPEC_RE` skipped every `./`-specifier before the resolution branch ran. Relative imports now resolve (and misresolve) as documented.
+- `broken-imports`: packages declared in `package.json` are no longer flagged when merely not installed; bundler suffixes (`?raw`, `?inline`, `#fragment`) no longer break resolution.
+- Markdown report marks baseline-suppressed findings as *(baseline)*.

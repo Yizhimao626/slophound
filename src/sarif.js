@@ -20,7 +20,7 @@ export function toSarif(result) {
           driver: {
             name: 'slophound',
             version: result.version,
-            informationUri: 'https://github.com/your-username/slophound',
+            informationUri: 'https://github.com/Yizhimao626/slophound',
             rules,
           },
         },
