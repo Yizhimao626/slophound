@@ -2,7 +2,7 @@
   "name": "slophound-vscode",
   "displayName": "SlopHound — AI slop scanner",
   "description": "Sniff out AI slop in your repo: fake tests, placeholder code, slop comments, copy-paste blocks, unresolvable imports, hallucinated APIs.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "license": "MIT",
   "publisher": "Yizhimao626",
   "engines": {

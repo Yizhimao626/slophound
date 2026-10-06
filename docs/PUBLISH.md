@@ -4,33 +4,33 @@
 
 ## 1. 占位符（已替换 ✅）
 
-仓库链接已指向 `github.com/Yizhimao626/slophound`（package.json、README 双语徽章、Action 示例、sarif.js、vscode publisher）。仅剩两处需要你手动确认：
+仓库链接已指向 `github.com/Yizhimao626/slophound`（package.json、README 双语徽章、Action 示例、sarif.js、vscode publisher）。仅剩一处可选：
 
 - [ ] `README.md` "Stay updated" 一节如需邮件订阅，自行接入 Buttondown/listmonk 后加链接（当前默认只引导 Watch Releases）
-- [ ] `LICENSE` 版权人 `The SlopHound Authors` 可改成你的名字（可选）
 
 ## 2. 发布到 npm
 
 ```bash
 npm whoami                    # 没有 npm 账号先去 npmjs.com 注册
 npm login
-npm publish                   # 首次发布无需 --access，默认 public
+npm publish                   # 首次发布无需 --access，默认 public；prepublishOnly 会先跑测试和自扫描
 ```
 
-- 发布前再确认一次 `slophound` 未被占用：https://www.npmjs.com/package/slophound （本清单编写时确认过是空闲的，但发布当天再查一次）
+- 包名空闲状态：2026-10-06 复查 `registry.npmjs.org/slophound` 返回 404（未占用）。发布当天再查一次：https://www.npmjs.com/package/slophound
 - **强烈建议发布后立即在 npm 账户开启 2FA**，防止包被劫持后向用户推送恶意版本
 - 发布后验证：`npx slophound test/fixtures/sloppy-project`
 
 ## 3. 创建 GitHub 仓库
 
-```bash
-cd slophound
-git init
-git add -A
-git commit -m "feat: slophound v0.1.0 — AI slop scanner with fix mode"
+本地仓库已就绪（main 分支，历史干净，工作区无未提交内容）。只需在远端建仓库并推送：
+
+```powershell
+# 方式 A：安装 GitHub CLI（winget install GitHub.cli）后
 gh repo create slophound --public --source=. --push
-# 没有 gh CLI 就在网页上建仓库，然后：
-# git remote add origin git@github.com:YOUR/slophound.git && git push -u origin main
+
+# 方式 B：网页 github.com/new 建仓库（名为 slophound，不要勾选初始化 README），然后：
+git remote add origin https://github.com/Yizhimao626/slophound.git
+git push -u origin main
 ```
 
 上传后检查：
@@ -46,9 +46,9 @@ gh repo create slophound --public --source=. --push
 - [x] 离线：`src/`、`bin/` 无任何网络调用（已用 grep 验证）
 - [x] 无遥测、无密钥、无子进程（已验证）
 - [x] MIT 许可证已附带
-- [ ] LICENSE 版权人已改成你的名字
+- [x] LICENSE 版权人已改为 Yizhimao626
+- [x] README 已声明与 GitHub/OpenAI/Anthropic 无关联（避免商标暗示）
 - [ ] npm 包名发布当天仍然空闲
-- [ ] README 已声明与 GitHub/OpenAI/Anthropic 无关联（避免商标暗示）
 
 ## 5. 版本迭代约定
 

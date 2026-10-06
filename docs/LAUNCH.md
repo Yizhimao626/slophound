@@ -29,9 +29,9 @@ Show HN: I built a zero-dependency CLI that cleans up AI-generated mess
 > scores the repo 0–100, and removes what it can safely remove (slop comment
 > lines) — with a dry-run diff first. It gates CI via exit codes.
 >
-> It scans JS/TS and Python with 6 rules, runs on the Node standard library
-> only (zero npm dependencies, fully offline, no telemetry), and it scans
-> itself in CI as its own regression test.
+> It scans 7 languages (JS/TS, Python, Go, Java, Rust, C#, Kotlin) with 8
+> rules, runs on the Node standard library only (zero npm dependencies, fully
+> offline, no telemetry), and it scans itself in CI as its own regression test.
 >
 > Happy to answer questions about the heuristics — the hard part was tuning
 > for zero false positives rather than recall.
@@ -60,7 +60,7 @@ Show HN: I built a zero-dependency CLI that cleans up AI-generated mess
 
 ## 掘金 / 即刻
 
-掘金发完整教程文（《我如何用 6 条规则量化 AI slop》角度，讲评分公式和启发式设计，比纯推广文传播好）。即刻发短动态 + 终端截图。
+掘金发完整教程文（《我如何用 8 条规则量化 AI slop》角度，讲评分公式和启发式设计，比纯推广文传播好）。即刻发短动态 + 终端截图。
 
 ## X / Twitter
 
@@ -73,11 +73,11 @@ Show HN: I built a zero-dependency CLI that cleans up AI-generated mess
 
 - GitHub：引导 **Watch → Custom → Releases**（README 已埋好），Release 是天然推送渠道
 - 邮件：注册一个 Buttondown / listmonk（免费额度足够），把订阅链接填进 README 的 "Stay updated" 一节；只收邮箱、每封信带退订链接（合规底线）
-- 给订阅者的第一封邮件：附一份"AI slop 自查清单"（把 6 条规则写成人工 checklist），换来的信任远大于一条营销邮件
+- 给订阅者的第一封邮件：附一份"AI slop 自查清单"（把 8 条规则写成人工 checklist），换来的信任远大于一条营销邮件
 
 ## 内容复用（长尾流量）
 
-1. 《AI slop 的 6 种形态》（把规则写成文章，HN/掘金都能发）
+1. 《AI slop 的 8 种形态》（把规则写成文章，HN/掘金都能发）
 2. 《评分公式为什么是 100 − 密度×8》（透明度是差异化卖点）
 3. 扫一个知名开源仓库的 slop 报告（只发数据不发评价，容易上热搜也容易引战——标题注明"无褒贬"）
 
