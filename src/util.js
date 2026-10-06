@@ -23,6 +23,20 @@ export function djb2(str) {
   return h.toString(36);
 }
 
+// Two independent 32-bit lanes (djb2 + FNV-1a) combined into one string.
+// Used for baseline fingerprints: stays compact while accidental collisions
+// become practically impossible (a single-lane djb2 can collide at scale).
+export function hash64(str) {
+  let h1 = 5381;
+  let h2 = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str.charCodeAt(i);
+    h1 = ((h1 << 5) + h1 + ch) >>> 0;
+    h2 = Math.imul(h2 ^ ch, 0x01000193) >>> 0;
+  }
+  return h1.toString(36) + h2.toString(36);
+}
+
 // Light gitignore-style glob: supports *, **, ?, leading "/", trailing "/" (dir-only), "!" negation.
 export function globToRegex(glob) {
   let s = glob.trim();

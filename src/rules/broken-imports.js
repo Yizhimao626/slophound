@@ -195,7 +195,9 @@ export default {
       for (const [mod, idx] of targets) {
         const top = mod.split('.')[0];
         if (STDLIB.has(top)) continue;
-        const localOk = [path.dirname(f.path), ctx.root].some((d) => {
+        // src-layout projects keep their packages under root/src — check there
+        // too so a project's own package never looks like a hallucinated import.
+        const localOk = [path.dirname(f.path), ctx.root, path.join(ctx.root, 'src')].some((d) => {
           try {
             return fs.existsSync(path.join(d, top + '.py')) || fs.existsSync(path.join(d, top, '__init__.py'));
           } catch {

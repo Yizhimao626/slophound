@@ -7,7 +7,7 @@ import { walk, loadFile } from './scanner.js';
 import { activeRules } from './rules/index.js';
 import { computeScore } from './score.js';
 import { summarize } from './report.js';
-import { SEVERITY_ORDER, djb2 } from './util.js';
+import { SEVERITY_ORDER, hash64 } from './util.js';
 
 const pkg = JSON.parse(fs.readFileSync(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8'));
 
@@ -16,7 +16,7 @@ export const version = pkg.version;
 // Findings are fingerprinted by rule+file+message (not line), so a baseline
 // survives harmless edits that shift lines around.
 export function fingerprint(f) {
-  return djb2(`${f.rule}|${f.file}|${f.message}`);
+  return hash64(`${f.rule}|${f.file}|${f.message}`);
 }
 
 export function loadBaseline(file) {

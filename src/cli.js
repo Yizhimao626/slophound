@@ -57,6 +57,7 @@ const HELP = `
   Score
     100 - (weighted findings per 1000 lines) x 8
     weights: info 0.25 · minor 1 · major 3 · critical 8
+    line volume is floored at 500 lines so tiny repos don't swing the score
 
   Baseline workflow (existing repos)
     $ slophound . --update-baseline slophound-baseline.json   # record current state

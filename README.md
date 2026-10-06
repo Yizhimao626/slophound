@@ -77,6 +77,7 @@ Languages: **JavaScript/TypeScript, Python, Go, Java, Rust, C#, Kotlin** (`sloph
 ```
 100 − (weighted findings per 1000 lines) × 8
 weights: info 0.25 · minor 1 · major 3 · critical 8
+line volume is floored at 500 lines so tiny repos don't swing the score
 ```
 
 Grades: A+ ≥ 95 · A ≥ 85 · B ≥ 70 · C ≥ 50 · F < 50. The formula is

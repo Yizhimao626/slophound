@@ -27,6 +27,11 @@ First public release.
 - **Programmatic API** (`src/api.js`) — one scan implementation shared by the CLI, the VS Code extension (MVP, `vscode/`), and library consumers.
 - `--list-rules`, `--init` config bootstrap, gitignore-style ignores, `paths` alias resolution, zero dependencies, fully offline.
 
+### Changed
+
+- Baseline fingerprints now use a two-lane 64-bit-equivalent hash instead of a single-lane djb2, making accidental collisions in large baselines practically impossible. If you recorded a baseline with an earlier build, re-run `--update-baseline` once.
+- The score formula in the READMEs and `--help` now documents its 500-line floor.
+
 ### Fixed
 
 - `--fix` preserves CRLF line endings instead of rewriting whole files on Windows.
@@ -34,4 +39,5 @@ First public release.
 - Missing option values (e.g. `--ignore` as the last argument) fail with a clear error instead of crashing.
 - **Relative-import detection was silently dead** since the first build: a leftover `^\.|` alternative in `SKIP_SPEC_RE` skipped every `./`-specifier before the resolution branch ran. Relative imports now resolve (and misresolve) as documented.
 - `broken-imports`: packages declared in `package.json` are no longer flagged when merely not installed; bundler suffixes (`?raw`, `?inline`, `#fragment`) no longer break resolution.
+- `broken-imports`: a Python project's own package in a src-layout (`src/<pkg>/__init__.py`) is no longer reported as a hallucinated import.
 - Markdown report marks baseline-suppressed findings as *(baseline)*.

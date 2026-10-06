@@ -5,11 +5,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { main } from '../src/cli.js';
-import { scanPath } from '../src/api.js';
+import { scanPath, fingerprint } from '../src/api.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SLOPPY = path.join(ROOT, 'test', 'fixtures', 'sloppy-project');
 const CLEAN = path.join(ROOT, 'test', 'fixtures', 'clean-project');
+const SRCLAYOUT = path.join(ROOT, 'test', 'fixtures', 'src-layout-project');
 
 // Runs the CLI in-process and captures console output.
 function run(args) {
@@ -296,4 +297,22 @@ test('--md marks baseline-suppressed findings', () => {
 test('--version and --help work', () => {
   assert.match(run(['--version']).stdout, /slophound v/);
   assert.ok(run(['--help']).stdout.includes('Usage'));
+});
+
+test('broken-imports: src-layout project does not flag its own package', () => {
+  const res = runJson([SRCLAYOUT]);
+  const msgs = res.findings
+    .filter((f) => f.rule === 'broken-imports')
+    .map((f) => f.message)
+    .join('\n');
+  assert.ok(!msgs.includes('"mypkg"'), `project's own src-layout package must not be flagged: ${msgs}`);
+  assert.ok(msgs.includes('not_a_real_module_xyz'), 'hallucinated imports must still be flagged');
+});
+
+test('fingerprints: stable, and collision-free for realistic baselines', () => {
+  const a = { rule: 'copy-paste', file: 'a.js', message: 'identical 8-line block appears 2 times (a.js:1, b.js:2)' };
+  assert.equal(fingerprint(a), fingerprint({ ...a }), 'same finding must produce the same fingerprint');
+  const seen = new Set();
+  for (let i = 0; i < 5000; i++) seen.add(fingerprint({ rule: 'r', file: `f${i}.js`, message: 'm' }));
+  assert.equal(seen.size, 5000, 'distinct findings must not collide');
 });
