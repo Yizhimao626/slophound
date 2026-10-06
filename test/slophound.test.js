@@ -57,6 +57,34 @@ test('hallucinated-api: flags fake members on Math/JSON/os, not real ones', () =
   }
 });
 
+test('hallucinated-api: literal receivers checked (fake flagged, real not)', () => {
+  const res = runJson([SLOPPY]);
+  const messages = res.findings
+    .filter((f) => f.rule === 'hallucinated-api')
+    .map((f) => f.message)
+    .join('\n');
+  assert.ok(messages.includes('toUpper'), `expected "report".toUpper() flagged: ${messages}`);
+  assert.ok(messages.includes('strips'), `expected "slop".strips() flagged: ${messages}`);
+  assert.ok(!/\.trim\(\) — no such/.test(messages), 'trim() must not be flagged');
+  assert.ok(!/\bname\b.*no such/.test(messages), 'upper() must not be flagged');
+  assert.ok(!messages.includes('array literal'), 'element access like x[0].trim() must not be flagged');
+});
+
+test('--prune-baseline drops fingerprints that no longer occur', () => {
+  const baselineFile = path.join(ROOT, 'test', 'tmp-prune.json');
+  run([SLOPPY, '--update-baseline', baselineFile]);
+  const seeded = JSON.parse(fs.readFileSync(baselineFile, 'utf8'));
+  assert.ok(seeded.fingerprints.length > 0, 'seeded baseline must be non-empty');
+
+  const r = run([CLEAN, '--prune-baseline', baselineFile]);
+  assert.equal(r.status, 0, `prune run failed: ${r.stdout}`);
+  assert.ok(/pruned|up to date/.test(r.stdout), `unexpected output: ${r.stdout}`);
+
+  const prunedFile = JSON.parse(fs.readFileSync(baselineFile, 'utf8'));
+  assert.equal(prunedFile.fingerprints.length, 0, 'all seeded fingerprints must be gone');
+  fs.unlinkSync(baselineFile);
+});
+
 test('multi-language: Go/Java/Rust/C#/Kotlin test files are checked', () => {
   const res = runJson([SLOPPY]);
   for (const file of ['service.go', 'Service.java', 'lib.rs', 'Runner.cs', 'util.kt']) {

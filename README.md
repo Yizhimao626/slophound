@@ -135,6 +135,7 @@ them once, then gate only **new** slop:
 ```bash
 npx slophound . --update-baseline slophound-baseline.json   # one-time snapshot
 npx slophound . --baseline slophound-baseline.json          # CI: fails on new slop only
+npx slophound . --prune-baseline slophound-baseline.json    # drop fingerprints you've fixed
 ```
 
 Commit the baseline file. Findings in the baseline still show up in reports
@@ -189,10 +190,9 @@ gate it sells you. If a change introduces slop into this codebase, CI fails.
 - [x] SARIF output for code-scanning integrations
 - [x] `--baseline` to gate only new slop
 - [x] Hallucinated *API* detection on well-known globals (beta)
+- [x] Hallucinated *API* detection for literal receivers (strings, numbers, arrays)
 - [x] VS Code extension (MVP, run-from-source)
-- [ ] Hallucinated API detection for more receivers (strings, arrays, third-party packages)
-- [ ] VS Code marketplace packaging (bundling step)
-- [ ] `--baseline` auto-pruning (drop fingerprints that no longer occur)
+- [x] `--baseline` auto-pruning (drop fingerprints that no longer occur)
 
 PRs welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Every new rule needs a
 positive and a negative fixture.

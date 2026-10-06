@@ -26,6 +26,9 @@ const HELP = `
     --fix-dry           preview what --fix would remove, change nothing
     --fail-on <sev>     exit 1 when findings reach this severity: info|minor|major|critical|none (default: major)
     --baseline <file>   suppress findings recorded in a baseline file (only new slop counts)
+    --prune-baseline <file>
+                        like --baseline, and rewrite the file without fingerprints
+                        that no longer occur (fixed issues leave the baseline)
     --update-baseline <file>
                         write all current findings to a baseline file and exit 0
     --rules <a,b>       run only these rules
@@ -82,6 +85,7 @@ function parseArgs(argv) {
     fix: false,
     fixDry: false,
     baseline: null,
+    pruneBaseline: null,
     updateBaseline: null,
     listRules: false,
     help: false,
@@ -105,6 +109,7 @@ function parseArgs(argv) {
       case '--fix-dry': opts.fixDry = true; break;
       case '--fail-on': opts.failOn = argv[++i]; break;
       case '--baseline': opts.baseline = argv[++i]; break;
+      case '--prune-baseline': opts.baseline = argv[++i]; opts.pruneBaseline = argv[i]; break;
       case '--update-baseline': opts.updateBaseline = argv[++i]; break;
       case '--rules': opts.rules = (argv[++i] ?? '').split(',').map((s) => s.trim()).filter(Boolean); break;
       case '--list-rules': opts.listRules = true; break;
@@ -180,6 +185,31 @@ export function main(argv) {
 
   try {
     const { config, result, loaded, active } = scan(root, opts);
+
+    if (opts.pruneBaseline) {
+      const before = loadBaseline(opts.pruneBaseline).size;
+      const keep = result.findings.map(fingerprint);
+      fs.writeFileSync(
+        opts.pruneBaseline,
+        JSON.stringify(
+          {
+            version: 1,
+            tool: 'slophound',
+            updatedAt: new Date().toISOString(),
+            fingerprints: keep,
+          },
+          null,
+          2
+        ) + '\n'
+      );
+      const pruned = before - keep.length;
+      console.log(
+        pruned > 0
+          ? `Baseline pruned: ${pruned} stale fingerprint(s) removed, ${keep.length} kept (${opts.pruneBaseline}).`
+          : `Baseline up to date — nothing to prune (${keep.length} fingerprint(s), ${opts.pruneBaseline}).`
+      );
+      return 0;
+    }
 
     if (opts.updateBaseline) {
       fs.writeFileSync(

@@ -102,6 +102,7 @@ npx slophound . --fix                # 真正清理（只删整行注释，绝�
 ```bash
 npx slophound . --update-baseline slophound-baseline.json   # 一次性记录现状
 npx slophound . --baseline slophound-baseline.json          # CI：只对新增 slop 失败
+npx slophound . --prune-baseline slophound-baseline.json    # 已修复的问题自动移出基线
 ```
 
 把基线文件提交进仓库。基线里的发现仍会出现在报告中（标记为已知问题），但不计入评分、不影响退出码。
@@ -132,10 +133,9 @@ npx slophound . --baseline slophound-baseline.json          # CI：只对新增 
 - [x] SARIF 输出（接入 code scanning）
 - [x] `--baseline`：忽略存量问题，只门禁新增 slop
 - [x] 幻觉 API 检测（常用全局对象，beta）
+- [x] 幻觉 API 检测扩展到字面量（字符串/数字/数组）
 - [x] VS Code 扩展（MVP，源码运行）
-- [ ] 更多接收者的幻觉 API 检测（字符串、数组、第三方包）
-- [ ] VS Code 市场打包（需引入打包步骤）
-- [ ] `--baseline` 自动瘦身（清理已修复的指纹）
+- [x] `--baseline` 自动瘦身（清理已修复的指纹）
 
 欢迎 PR——见 [CONTRIBUTING.md](CONTRIBUTING.md)。每条新规则必须同时提供正、负两个 fixture。
 

@@ -1,6 +1,6 @@
 {
   "name": "slophound",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Sniff out AI slop in your repo: fake tests, placeholder code, slop comments, copy-paste blocks, hallucinated imports. Zero dependencies, fully offline.",
   "license": "MIT",
   "type": "module",

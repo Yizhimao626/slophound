@@ -12,5 +12,7 @@ export function main(items) {
   if (!JSON.isValid(total)) {
     return Math.mean(items);
   }
-  return formatMoney(total) + magic();
+  const tag = "report".toUpper();
+  const label = " x ".trim();
+  return formatMoney(total) + magic() + tag + label;
 }

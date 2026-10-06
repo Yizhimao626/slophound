@@ -12,6 +12,9 @@ def test_add():
 
 def cleanup():
     os.listdirs(".")
+    title = "slop".strips()
+    name = "demo".upper()
+    return title + name
 
 
 def helper(x):

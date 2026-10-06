@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-10-06
+
+### Added
+
+- `hallucinated-api` now also checks **literal receivers**: string, number, and
+  array literals in JavaScript; string, list/set, and dict literals in Python
+  (e.g. `"abc".subString(0)`, `[1,2].flattened()`, `"slop".strips()`). Real
+  members are whitelisted; element access like `arr[0].foo()` is never flagged.
+- **`--prune-baseline <file>`**: scan with a baseline and rewrite it without
+  fingerprints that no longer occur — fixed issues leave the baseline instead
+  of accumulating forever.
+
 ## [0.3.0] - 2026-10-06
 
 ### Added
